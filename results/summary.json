@@ -1,0 +1,234 @@
+{
+  "sample": {
+    "eval_start": "1969-07",
+    "eval_end": "2026-08",
+    "n_months": 686,
+    "n_assets": 49,
+    "n_trials": 118,
+    "cost_bps": 10.0,
+    "vol_target": 0.1
+  },
+  "selected": {
+    "trial": "xsmom(lookback=12,skip=0,quantile=0.2)|vol12",
+    "n_months": 686,
+    "ann_return": 0.08121141670371848,
+    "ann_vol": 0.11944936820286046,
+    "sharpe": 0.6798815090072087,
+    "max_drawdown": -0.34685944695971127,
+    "sharpe_ci95": [
+      0.4086107640422931,
+      0.9547767919354527
+    ],
+    "psr_vs_zero": 0.9999997438635866,
+    "n_trials": 118,
+    "trial_sharpe_std_ann": 0.38197791040894424,
+    "expected_max_sharpe_ann": 0.9886725923378709,
+    "deflated_sharpe": 0.011281468741232554,
+    "deflated_sharpe_by_n_trials": {
+      "1": 0.9999997438635866,
+      "4": 0.9799774919619529,
+      "10": 0.7187777280368904,
+      "30": 0.20382319603243032,
+      "118": 0.011281468741232554
+    },
+    "null_sharpe_std_ann": 0.12765661307614848,
+    "expected_max_sharpe_null_var_ann": 0.33041333317926064,
+    "deflated_sharpe_null_var": 0.995077115073873,
+    "alpha": {
+      "ff3": {
+        "alpha_monthly": 0.008040207062024879,
+        "alpha_annual": 0.09648248474429855,
+        "alpha_t": 5.657339042253348,
+        "betas": {
+          "Mkt-RF": -0.09860990691013759,
+          "SMB": -0.1188474140312755,
+          "HML": -0.20424045930020757
+        },
+        "beta_t": {
+          "Mkt-RF": -2.769346046538077,
+          "SMB": -1.6427859045116961,
+          "HML": -3.2709431313589827
+        },
+        "r_squared": 0.05267982911321967,
+        "n_obs": 686,
+        "nw_lags": 6
+      },
+      "ff5": {
+        "alpha_monthly": 0.007938187048757083,
+        "alpha_annual": 0.095258244585085,
+        "alpha_t": 5.170881513965312,
+        "betas": {
+          "Mkt-RF": -0.08781508723010863,
+          "SMB": -0.13289406283090044,
+          "HML": -0.23422681763275477,
+          "RMW": -0.05577863146032694,
+          "CMA": 0.12437191285823347
+        },
+        "beta_t": {
+          "Mkt-RF": -2.3681816525199495,
+          "SMB": -1.721562757098337,
+          "HML": -3.2037099886378018,
+          "RMW": -0.5581456657603868,
+          "CMA": 1.0356336273007534
+        },
+        "r_squared": 0.05709834617442111,
+        "n_obs": 686,
+        "nw_lags": 6
+      }
+    },
+    "sharpe_first_half": 0.8962590782394209,
+    "sharpe_second_half": 0.4571580275907991,
+    "halves_split_month": "1998-02",
+    "sharpe_by_cost_bps": {
+      "0.0": 0.7578130058575423,
+      "10.0": 0.6798815090072087,
+      "25.0": 0.5626640799699839,
+      "50.0": 0.3667451299109388
+    }
+  },
+  "pbo": {
+    "pbo": 0.023232323232323233,
+    "prob_oos_loss": 0.009401709401709401,
+    "n_splits": 12870,
+    "n_blocks": 16,
+    "rows_used": 672,
+    "median_is_sharpe_ann": 0.6618447815574671,
+    "median_oos_sharpe_ann": 0.5444778471956804,
+    "median_logit": 2.935628349484285
+  },
+  "walk_forward": {
+    "train_months": 120,
+    "test_months": 12,
+    "n_windows": 48,
+    "distinct_trials_selected": 18,
+    "family_share": {
+      "xsmom": 0.75,
+      "ma_cross": 0.2292,
+      "tsmom": 0.0208
+    },
+    "oos": {
+      "n_months": 566,
+      "ann_return": 0.04199994160130023,
+      "ann_vol": 0.11531253191775942,
+      "sharpe": 0.36422703502212983,
+      "max_drawdown": -0.38109160648927953,
+      "sharpe_ci95": [
+        0.052746675656286476,
+        0.681495589704113
+      ]
+    },
+    "hindsight_best_same_months": {
+      "n_months": 566,
+      "ann_return": 0.06634350868945162,
+      "ann_vol": 0.11732841246263659,
+      "sharpe": 0.565451345475068,
+      "max_drawdown": -0.3468594469597107
+    },
+    "equal_weight_all_trials_same_months": {
+      "n_months": 566,
+      "ann_return": 0.01709308798351702,
+      "ann_vol": 0.06460169946873964,
+      "sharpe": 0.26459192442434515,
+      "max_drawdown": -0.22115396959951572
+    },
+    "median_trial_sharpe_same_months": 0.24672383016247393,
+    "alpha": {
+      "ff3": {
+        "alpha_monthly": 0.0036562494713677997,
+        "alpha_annual": 0.0438749936564136,
+        "alpha_t": 2.4552075093896177,
+        "betas": {
+          "Mkt-RF": 0.014827718406402124,
+          "SMB": -0.048567244169612646,
+          "HML": -0.1133812833284342
+        },
+        "beta_t": {
+          "Mkt-RF": 0.25839873778991035,
+          "SMB": -0.7256054940024893,
+          "HML": -1.4376270908839868
+        },
+        "r_squared": 0.012419211549205222,
+        "n_obs": 566,
+        "nw_lags": 5
+      },
+      "ff5": {
+        "alpha_monthly": 0.0031587431509954886,
+        "alpha_annual": 0.03790491781194586,
+        "alpha_t": 2.037513137061432,
+        "betas": {
+          "Mkt-RF": 0.02811764645927843,
+          "SMB": -0.013333194090403542,
+          "HML": -0.14891812340428148,
+          "RMW": 0.09159913299460753,
+          "CMA": 0.06962135276741444
+        },
+        "beta_t": {
+          "Mkt-RF": 0.5061712241842008,
+          "SMB": -0.1866522708717265,
+          "HML": -1.5750976612729761,
+          "RMW": 0.8950681915398401,
+          "CMA": 0.598949957851911
+        },
+        "r_squared": 0.016280676583525833,
+        "n_obs": 566,
+        "nw_lags": 5
+      }
+    }
+  },
+  "families": {
+    "xsmom": {
+      "n_trials": 48,
+      "best_trial": "xsmom(lookback=12,skip=0,quantile=0.2)|vol12",
+      "best_sharpe": 0.6798815090072087,
+      "median_sharpe": 0.37886765978988324,
+      "pbo": 0.017094017094017096
+    },
+    "tsmom": {
+      "n_trials": 14,
+      "best_trial": "tsmom(lookback=12)|vol12",
+      "best_sharpe": 0.39015587259337337,
+      "median_sharpe": 0.21474836993324825,
+      "pbo": 0.3175602175602176
+    },
+    "ma_cross": {
+      "n_trials": 38,
+      "best_trial": "ma_cross(fast=6,slow=18)|vol12",
+      "best_sharpe": 0.3571085070759885,
+      "median_sharpe": 0.2235184606656103,
+      "pbo": 0.33644133644133645
+    },
+    "reversal": {
+      "n_trials": 18,
+      "best_trial": "reversal(lookback=3,quantile=0.1)|vol36",
+      "best_sharpe": -0.48837902257253113,
+      "median_sharpe": -0.6493743211305296,
+      "pbo": 0.05920745920745921
+    }
+  },
+  "permutation_null": {
+    "n_permutations": 200,
+    "max_sharpe_mean": 0.24667912426309913,
+    "max_sharpe_p95": 0.42098420168711503,
+    "max_sharpe_max": 0.571046798754848,
+    "p_value": 0.004975124378109453
+  },
+  "meta": {
+    "data_source": "Kenneth R. French Data Library, https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
+    "datasets": [
+      "49_Industry_Portfolios_CSV.zip",
+      "F-F_Research_Data_Factors_CSV.zip",
+      "F-F_Research_Data_5_Factors_2x3_CSV.zip"
+    ],
+    "data_vintage": "This file was created using the 202608 CRSP database.",
+    "data_start_incl_warmup": "1963-07",
+    "runtime_seconds": 620.7,
+    "hardware": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "python": "3.13.7",
+    "packages": {
+      "numpy": "2.5.3",
+      "pandas": "3.0.6",
+      "scipy": "1.18.1",
+      "statsmodels": "0.15.0"
+    }
+  }
+}

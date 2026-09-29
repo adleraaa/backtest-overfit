@@ -86,7 +86,7 @@ p{color:var(--ink2);margin:0 0 12px}
 a{color:var(--accent)}
 .lede{font-size:1.08rem;max-width:68ch}
 .meta{color:var(--muted);font-size:.85rem}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;
 margin:28px 0}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .stat-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -103,8 +103,9 @@ th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;
 letter-spacing:.03em}
 tr:last-child td{border-bottom:0}
 td.num,th.num{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace}
-code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.88em}
-ul{color:var(--ink2);padding-left:20px}
+code{background:var(--code);padding:1px 5px;border-radius:4px;font-size:.88em;
+overflow-wrap:anywhere}
+ul{color:var(--ink2);padding-left:20px;overflow-wrap:anywhere}
 """
 
 
