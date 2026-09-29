@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from btoverfit.plots import make_figures
+from btoverfit.report import build
 from btoverfit.study import StudyConfig, run_study
 
 
@@ -67,3 +68,19 @@ def test_rejects_too_few_permutations():
         run_study(
             pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), StudyConfig("2000-01", n_permutations=1)
         )
+
+
+def test_report_builds_from_results(output, tmp_path):
+    results = tmp_path / "results"
+    summary = dict(output.summary)
+    summary["meta"] = {"data_source": "synthetic", "data_vintage": "test"}
+    results.mkdir()
+    (results / "summary.json").write_text(json.dumps(summary))
+    output.trials.to_csv(results / "trials.csv", index=False)
+    make_figures(output, results / "figures")
+
+    index = build(results, tmp_path / "site")
+    html = index.read_text(encoding="utf-8")
+    assert f"{output.summary['selected']['sharpe']:.2f}" in html
+    assert output.summary["selected"]["trial"] in html
+    assert (tmp_path / "site" / "figures" / "pbo_logits.png").exists()
