@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 MONTHS_PER_YEAR = 12
+DEFAULT_VOL_TARGET = 0.10  # annualized
 
 
 @dataclass(frozen=True)
@@ -22,7 +23,7 @@ def backtest(
     weights: pd.DataFrame,
     returns: pd.DataFrame,
     cost_bps: float = 10.0,
-    vol_target: float | None = 0.10,
+    vol_target: float | None = DEFAULT_VOL_TARGET,
     vol_window: int = 36,
     max_leverage: float = 5.0,
 ) -> BacktestResult:
