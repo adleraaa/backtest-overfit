@@ -8,7 +8,7 @@ import pytest
 
 from btoverfit.plots import make_figures
 from btoverfit.report import build
-from btoverfit.study import StudyConfig, run_study
+from btoverfit.study import StudyConfig, run_study, shuffle_eval_months
 
 
 @pytest.fixture(scope="module")
@@ -55,6 +55,33 @@ def test_walk_forward_and_pbo_ranges(output):
     assert s["walk_forward"]["oos"]["n_months"] == output.matrix.shape[0] - 36
     assert s["permutation_null"]["n_permutations"] == 3
     assert 0 < s["permutation_null"]["p_value"] <= 1
+
+
+def test_dsr_variants_and_vol_ablation_are_reported(output):
+    s = output.summary
+    sel = s["selected"]
+    assert set(sel["dsr"]) == {"raw", "sign_aligned", "sign_aligned_effective_n", "null_variance"}
+    assert 1 <= sel["effective_n_trials"] <= sel["n_trials"]
+    assert sel["deflated_sharpe"] == sel["dsr"]["sign_aligned_effective_n"]["dsr"]
+    # Fewer effective trials means a lower bar, so the DSR can only go up.
+    assert sel["dsr"]["sign_aligned_effective_n"]["dsr"] >= sel["dsr"]["sign_aligned"]["dsr"]
+    novol = s["no_vol_target"]
+    assert novol["selected_signal"].endswith("|novol")
+    assert novol["permutation_null"]["n_trials"] == s["sample"]["n_trials"] // 2
+    assert "is_oos_slope" in s["pbo"]
+
+
+def test_shuffle_keeps_warmup_in_place_and_permutes_eval_months():
+    index = pd.period_range("2000-01", periods=30, freq="M")
+    excess = pd.DataFrame({"a": np.arange(30.0), "b": np.arange(30.0) + 100}, index=index)
+    excess.iloc[:6, 0] = np.nan  # an industry that starts during the warm-up
+    shuffled = shuffle_eval_months(excess, "2000-11", np.random.default_rng(0))
+    pd.testing.assert_frame_equal(shuffled.iloc[:10], excess.iloc[:10])
+    assert not shuffled.iloc[10:].isna().to_numpy().any()  # no NaN moved into the window
+    assert sorted(shuffled["a"].iloc[10:]) == list(range(10, 30))
+    assert not shuffled["a"].iloc[10:].equals(excess["a"].iloc[10:])  # actually shuffled
+    # Whole months move together: each row keeps its cross-section.
+    assert (shuffled["b"] - shuffled["a"]).iloc[10:].eq(100).all()
 
 
 def test_figures_are_written(output, tmp_path):

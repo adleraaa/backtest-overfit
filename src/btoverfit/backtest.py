@@ -49,11 +49,14 @@ def backtest(
     weights = weights.reindex(index=returns.index, columns=returns.columns).fillna(0.0)
     asset_returns = returns.fillna(0.0)
 
-    # Unscaled P&L: weights decided at t-1 earn returns of month t. Months with no
-    # position are NaN rather than 0 so that signal warm-up does not drag the volatility
-    # estimate toward zero (which would max out leverage).
+    # Unscaled P&L: weights decided at t-1 earn returns of month t. Months before the
+    # first position (signal warm-up) are NaN rather than 0 so that they do not drag the
+    # volatility estimate toward zero (which would max out leverage). A flat month *after*
+    # that stays a genuine 0: masking it too would make the rolling std NaN for the next
+    # vol_window months and silently switch the strategy off.
     lagged = weights.shift(1)
-    unscaled = (lagged * asset_returns).sum(axis=1).where(lagged.abs().sum(axis=1) > 0)
+    started = (lagged.abs().sum(axis=1) > 0).cummax()
+    unscaled = (lagged * asset_returns).sum(axis=1).where(started)
 
     if vol_target is None:
         decided = weights

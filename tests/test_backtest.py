@@ -47,6 +47,19 @@ def test_vol_targeting_respects_leverage_cap():
     assert res.positions.abs().sum(axis=1).max() == pytest.approx(3.0)
 
 
+def test_one_flat_month_does_not_switch_the_strategy_off():
+    rng = np.random.default_rng(3)
+    r = _single_asset(rng.normal(0.0, 0.02, 80))
+    w = pd.DataFrame({"a": 1.0}, index=r.index)
+    w.iloc[40] = 0.0  # one month with no signal, well after the vol window has filled
+    res = backtest(w, r, cost_bps=0.0, vol_window=12)
+    held = res.positions["a"]
+    assert held.iloc[41] == 0.0  # the flat decision is held in month 41
+    # From month 42 on the strategy trades again; a NaN-masked flat month would have made
+    # the rolling volatility NaN (and the position 0) for the next 12 months.
+    assert (held.iloc[42:] > 0).all()
+
+
 def test_no_position_until_vol_window_filled():
     rng = np.random.default_rng(2)
     r = _single_asset(rng.normal(0.0, 0.02, 60))

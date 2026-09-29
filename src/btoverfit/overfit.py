@@ -2,8 +2,8 @@
 
 References
 ----------
-Bailey, Borwein, Lopez de Prado, Zhu (2015), "The Probability of Backtest Overfitting",
-Journal of Computational Finance 20(4).
+Bailey, Borwein, Lopez de Prado, Zhu (2017), "The Probability of Backtest Overfitting",
+Journal of Computational Finance 20(4), 39-69 (SSRN working paper 2015).
 """
 
 from __future__ import annotations
@@ -46,6 +46,14 @@ def cscv_pbo(returns: pd.DataFrame | np.ndarray, n_blocks: int = 16, metric: str
 
     Performance per split is computed from per-block sums and sums of squares, so the
     C(16, 8) = 12,870 splits cost a few matrix products instead of re-slicing the data.
+    Why that is exact: for the n = n_blocks/2 * per_block rows in a half,
+        mean = (sum over chosen blocks of S_b) / n
+        var  = (sum over chosen blocks of Q_b - n * mean^2) / (n - 1)
+    where S_b and Q_b are block b's sum and sum of squares, because sum((x - m)^2) =
+    sum(x^2) - n m^2. A 0/1 mask row times the (blocks x trials) matrix of S_b adds up
+    exactly the chosen blocks. That variance form can lose precision when the mean is
+    large relative to the spread, which monthly returns are not.
+    ``tests/test_overfit.py`` checks the result against a slow per-split loop.
     """
     if metric not in {"sharpe", "mean"}:
         raise ValueError("metric must be 'sharpe' or 'mean'")
@@ -111,7 +119,8 @@ def walk_forward(returns: pd.DataFrame, train: int = 120, test: int = 12) -> Wal
     rows = []
     for start in range(train, len(returns), test):
         window = returns.iloc[start - train : start]
-        train_sharpe = window.mean() / window.std(ddof=1)
+        # A zero-variance (flat) trial gets NaN, which idxmax skips, instead of +/-inf.
+        train_sharpe = window.mean() / window.std(ddof=1).replace(0.0, np.nan)
         chosen = train_sharpe.idxmax()
         test_slice = returns[chosen].iloc[start : start + test]
         pieces.append(test_slice)

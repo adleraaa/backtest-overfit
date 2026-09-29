@@ -19,10 +19,21 @@ def _clean(returns) -> np.ndarray:
     return r[~np.isnan(r)]
 
 
+def _per_period_sharpe(r: np.ndarray) -> float:
+    """mean / sample std, or NaN when it is undefined (fewer than 2 points or zero std).
+
+    Returning NaN explicitly (instead of letting numpy produce inf or a warning) lets the
+    experiment script fail loudly when it serializes results with allow_nan=False.
+    """
+    if len(r) < 2:
+        return float("nan")
+    std = r.std(ddof=1)
+    return float(r.mean() / std) if std > 0 else float("nan")
+
+
 def sharpe_ratio(returns, periods_per_year: int = MONTHS_PER_YEAR) -> float:
     """Annualized Sharpe ratio of excess returns (sample std with ddof=1)."""
-    r = _clean(returns)
-    return float(r.mean() / r.std(ddof=1) * np.sqrt(periods_per_year))
+    return _per_period_sharpe(_clean(returns)) * float(np.sqrt(periods_per_year))
 
 
 def annualized_return(returns, periods_per_year: int = MONTHS_PER_YEAR) -> float:
@@ -48,20 +59,35 @@ def probabilistic_sharpe_ratio(returns, benchmark_sr: float = 0.0) -> float:
     and negative skew make the estimate less trustworthy.
     """
     r = _clean(returns)
-    n = len(r)
-    sr = r.mean() / r.std(ddof=1)
-    skew = stats.skew(r)
-    kurt = stats.kurtosis(r, fisher=False)  # raw kurtosis, 3 for a normal
-    se_scale = np.sqrt(1.0 - skew * sr + (kurt - 1.0) / 4.0 * sr**2)
-    return float(stats.norm.cdf((sr - benchmark_sr) * np.sqrt(n - 1) / se_scale))
+    sr = _per_period_sharpe(r)
+    if np.isnan(sr):
+        return float("nan")
+    # raw kurtosis (3 for a normal), as in the paper
+    return psr_from_moments(
+        sr, len(r), stats.skew(r), stats.kurtosis(r, fisher=False), benchmark_sr
+    )
 
 
-def expected_max_sharpe(n_trials: int, sr_variance: float, sr_mean: float = 0.0) -> float:
+def psr_from_moments(
+    sr: float, n_obs: int, skew: float, kurtosis: float, benchmark_sr: float = 0.0
+) -> float:
+    """PSR from summary statistics: per-period Sharpe, sample size, skew, raw kurtosis.
+
+    Z[(SR - SR*) * sqrt(T - 1) / sqrt(1 - skew * SR + (kurt - 1) / 4 * SR^2)]. Split out
+    from ``probabilistic_sharpe_ratio`` so it can be checked against the paper's worked
+    example, which is stated in moments rather than as a return series.
+    """
+    se_scale = np.sqrt(1.0 - skew * sr + (kurtosis - 1.0) / 4.0 * sr**2)
+    return float(stats.norm.cdf((sr - benchmark_sr) * np.sqrt(n_obs - 1) / se_scale))
+
+
+def expected_max_sharpe(n_trials: float, sr_variance: float, sr_mean: float = 0.0) -> float:
     """Expected maximum of ``n_trials`` Sharpe estimates whose true value is ``sr_mean``.
 
     Extreme-value approximation from Bailey & Lopez de Prado (2014), eq. for SR_0:
     E[max] ~ mean + std * ((1 - g) * Z^-1(1 - 1/N) + g * Z^-1(1 - 1/(N e))), g = Euler's
-    constant. Units follow the inputs (per-period in this project).
+    constant. Units follow the inputs (per-period in this project). ``n_trials`` may be
+    fractional, e.g. an effective number of independent trials.
     """
     if n_trials < 1:
         raise ValueError("n_trials must be >= 1")
@@ -72,7 +98,7 @@ def expected_max_sharpe(n_trials: int, sr_variance: float, sr_mean: float = 0.0)
     return float(sr_mean + np.sqrt(sr_variance) * z)
 
 
-def deflated_sharpe_ratio(returns, n_trials: int, trial_sr_variance: float) -> float:
+def deflated_sharpe_ratio(returns, n_trials: float, trial_sr_variance: float) -> float:
     """Deflated Sharpe Ratio -- Bailey & Lopez de Prado (2014).
 
     The PSR of the selected strategy against the Sharpe ratio one would expect from the
@@ -81,6 +107,30 @@ def deflated_sharpe_ratio(returns, n_trials: int, trial_sr_variance: float) -> f
     """
     benchmark = expected_max_sharpe(n_trials, trial_sr_variance)
     return probabilistic_sharpe_ratio(returns, benchmark_sr=benchmark)
+
+
+def effective_number_of_trials(returns: pd.DataFrame) -> float:
+    """How many independent trials a correlated set of trials is worth.
+
+    Uses the participation ratio of the correlation matrix's eigenvalues,
+    (sum lambda)^2 / sum lambda^2: it equals N for N uncorrelated trials and 1 when every
+    trial is a copy (or a sign-flipped copy) of the same return stream. The DSR paper
+    asks for the number of *independent* trials; counting 118 near-duplicates as 118 would
+    overstate how much searching was done.
+    """
+    eigenvalues = np.linalg.eigvalsh(returns.corr().to_numpy())
+    return float(eigenvalues.sum() ** 2 / (eigenvalues**2).sum())
+
+
+def sign_aligned(sharpes: pd.Series, families: pd.Series) -> pd.Series:
+    """Flip the sign of every family whose median Sharpe ratio is negative.
+
+    A researcher who sees a whole family lose money would trade it the other way, so the
+    spread of Sharpe ratios the DSR should penalize is the spread of the sign-aligned
+    family, not the gap between a family and its own mirror image.
+    """
+    median = sharpes.groupby(families).transform("median")
+    return sharpes.where(median >= 0, -sharpes)
 
 
 def bootstrap_sharpe_ci(

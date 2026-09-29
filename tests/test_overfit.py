@@ -94,3 +94,15 @@ def test_walk_forward_selection_ignores_future_data():
     pd.testing.assert_series_equal(
         base["train_sharpe_ann"].iloc[:2], after["train_sharpe_ann"].iloc[:2]
     )
+
+
+def test_walk_forward_skips_a_flat_trial_instead_of_dividing_by_zero():
+    rng = np.random.default_rng(9)
+    index = pd.period_range("2000-01", periods=60, freq="M")
+    returns = pd.DataFrame(
+        {"noise": rng.normal(0.001, 0.02, 60), "flat": np.full(60, 0.001)}, index=index
+    )
+    result = walk_forward(returns, train=24, test=12)
+    # A constant positive return has infinite Sharpe if the zero std is not guarded.
+    assert (result.selections["trial"] == "noise").all()
+    assert np.isfinite(result.selections["train_sharpe_ann"]).all()

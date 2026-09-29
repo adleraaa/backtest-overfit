@@ -7,6 +7,7 @@ download code; raw files are cached under data/raw/ (gitignored).
 
 from __future__ import annotations
 
+import hashlib
 import re
 import urllib.request
 import zipfile
@@ -42,8 +43,19 @@ def download(name: str, cache_dir: Path = DEFAULT_CACHE, refresh: bool = False) 
             payload = response.read()
         tmp = path.with_suffix(".part")
         tmp.write_bytes(payload)
+        # The server answers maintenance or error pages with HTML; caching that as a .zip
+        # would break every later run, so check before it replaces the cached file.
+        if not zipfile.is_zipfile(tmp):
+            tmp.unlink()
+            raise ValueError(f"{BASE_URL + filename} did not return a zip file")
         tmp.replace(path)  # atomic-ish: never leave a truncated zip in the cache
     return path
+
+
+def sha256(path: Path) -> str:
+    """Hex digest of a cached file. The library revises history every month, so the
+    digest recorded with the results says exactly which download produced them."""
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
 def read_zip_text(path: Path) -> str:
@@ -85,7 +97,9 @@ def parse_monthly_table(text: str) -> pd.DataFrame:
     return pd.DataFrame(data / 100.0, index=index, columns=columns)
 
 
-def load(name: str, cache_dir: Path = DEFAULT_CACHE) -> tuple[pd.DataFrame, str]:
+def load(
+    name: str, cache_dir: Path = DEFAULT_CACHE, refresh: bool = False
+) -> tuple[pd.DataFrame, str]:
     """Load one dataset as (monthly decimal returns, vintage string)."""
-    text = read_zip_text(download(name, cache_dir))
+    text = read_zip_text(download(name, cache_dir, refresh=refresh))
     return parse_monthly_table(text), data_vintage(text)

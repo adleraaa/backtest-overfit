@@ -3,7 +3,9 @@ import zipfile
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from btoverfit import data
 from btoverfit.data import data_vintage, parse_monthly_table, read_zip_text
 
 # Same layout as the real library files (header notes, a monthly table, then more tables),
@@ -50,6 +52,42 @@ def test_read_zip_text_and_vintage(tmp_path):
     text = read_zip_text(path)
     assert data_vintage(text) == "This file was created using the 202608 CRSP database."
     assert parse_monthly_table(text).shape == (3, 3)
+
+
+class _FakeResponse(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+def _zip_bytes(text: str) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as zf:
+        zf.writestr("x.csv", text)
+    return buffer.getvalue()
+
+
+def test_download_refuses_to_cache_an_html_error_page(tmp_path, monkeypatch):
+    html = b"<html><body>Down for maintenance</body></html>"
+    monkeypatch.setattr(data.urllib.request, "urlopen", lambda *a, **k: _FakeResponse(html))
+    with pytest.raises(ValueError, match="zip"):
+        data.download("ff3", cache_dir=tmp_path)
+    assert list(tmp_path.iterdir()) == []  # nothing cached, not even the .part file
+
+
+def test_download_caches_and_refresh_replaces(tmp_path, monkeypatch):
+    payloads = iter([_zip_bytes(FIXTURE), _zip_bytes(FIXTURE.replace("2.00", "3.00"))])
+    monkeypatch.setattr(
+        data.urllib.request, "urlopen", lambda *a, **k: _FakeResponse(next(payloads))
+    )
+    first = data.download("ff3", cache_dir=tmp_path)
+    digest = data.sha256(first)
+    assert data.download("ff3", cache_dir=tmp_path) == first  # cached: no second request
+    assert data.sha256(first) == digest
+    data.download("ff3", cache_dir=tmp_path, refresh=True)
+    assert data.sha256(first) != digest
 
 
 def test_factor_file_layout():

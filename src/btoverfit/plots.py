@@ -95,9 +95,9 @@ def is_vs_oos(out: StudyOutput, path: Path) -> None:
     ax.plot(xs, intercept + slope * xs, color=ORANGE, linewidth=2, label=f"OLS slope {slope:.2f}")
     lim = [min(is_sr.min(), oos_sr.min()), max(is_sr.max(), oos_sr.max())]
     ax.plot(lim, lim, color=GRAY, linewidth=1, linestyle="--", label="no degradation (y = x)")
-    ax.set_title("Selected trial: in-sample vs out-of-sample Sharpe")
-    ax.set_xlabel("IS Sharpe of the IS winner (annualized)")
-    ax.set_ylabel("OOS Sharpe of same trial")
+    ax.set_title("CSCV: each split's IS winner, IS vs OOS Sharpe")
+    ax.set_xlabel("IS Sharpe of that split's IS winner (annualized)")
+    ax.set_ylabel("OOS Sharpe of the same trial")
     ax.legend(loc="upper left")
     fig.tight_layout()
     fig.savefig(path)

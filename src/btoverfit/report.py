@@ -55,7 +55,8 @@ CAPTIONS = {
     "sharpe_distribution.png": "Distribution of net Sharpe ratios across the grid.",
     "permutation_null.png": "Best-of-grid Sharpe on month-shuffled data vs the observed best.",
     "pbo_logits.png": "Logit of the out-of-sample rank of the in-sample winner across CSCV splits.",
-    "is_vs_oos.png": "In-sample vs out-of-sample Sharpe of the selected trial across CSCV splits.",
+    "is_vs_oos.png": "CSCV: in-sample Sharpe of each split's in-sample winner vs its "
+    "out-of-sample Sharpe (the winner changes from split to split).",
     "cumulative.png": "Growth of $1 over the walk-forward test months.",
 }
 
@@ -110,22 +111,27 @@ ul{color:var(--ink2);padding-left:20px;overflow-wrap:anywhere}
 
 
 def build(results: Path, out: Path) -> Path:
-    s = json.loads((results / "summary.json").read_text())
-    with (results / "trials.csv").open() as fh:
+    s = json.loads((results / "summary.json").read_text(encoding="utf-8"))
+    with (results / "trials.csv").open(encoding="utf-8") as fh:
         trials = list(csv.DictReader(fh))
 
     sel, pbo, wf, null = s["selected"], s["pbo"], s["walk_forward"], s["permutation_null"]
-    sample, meta = s["sample"], s["meta"]
+    sample, meta, novol = s["sample"], s["meta"], s["no_vol_target"]
+    dsr = sel["dsr"]
 
     stats_html = "".join(
         [
             stat("Selected, in-sample", f2(sel["sharpe"]), "annualized net Sharpe"),
-            stat("Walk-forward OOS", f2(wf["oos"]["sharpe"]), "same selection rule, live"),
+            stat(
+                "Walk-forward OOS",
+                f2(wf["oos"]["sharpe"]),
+                "same selection rule, pseudo out-of-sample",
+            ),
             stat("PBO (CSCV)", f2(pbo["pbo"]), f"{pbo['n_splits']:,} splits"),
             stat(
                 "Deflated Sharpe",
-                f"{sel['deflated_sharpe']:.3f} / {sel['deflated_sharpe_null_var']:.3f}",
-                "cross-trial Var[SR] / null Var[SR]",
+                f"{sel['deflated_sharpe']:.3f}",
+                f"sign-aligned Var[SR], effective N = {sel['effective_n_trials']:.1f}",
             ),
             stat(
                 "Permutation p-value",
@@ -171,7 +177,26 @@ def build(results: Path, out: Path) -> Path:
         ],
     ]
     cost_rows = [[f"{float(k):.0f} bps", f2(v)] for k, v in sel["sharpe_by_cost_bps"].items()]
-    dsr_rows = [[n, f"{v:.3f}"] for n, v in sel["deflated_sharpe_by_n_trials"].items()]
+    dsr_labels = {
+        "raw": "Raw trial Sharpes (paper recipe)",
+        "sign_aligned": "Sign-aligned families",
+        "sign_aligned_effective_n": "Sign-aligned, effective N",
+        "null_variance": "No-signal variance from shuffles",
+    }
+    dsr_rows = [
+        [
+            label,
+            f"{dsr[key]['n_trials']:.1f}",
+            f2(dsr[key]["sharpe_std_ann"]),
+            f2(dsr[key]["expected_max_sharpe_ann"]),
+            f"{dsr[key]['dsr']:.3f}",
+        ]
+        for key, label in dsr_labels.items()
+    ]
+    dsr_n_rows = [
+        [n, f"{v:.3f}"] for n, v in sel["deflated_sharpe_by_n_trials_aligned_var"].items()
+    ]
+    nvn = novol["permutation_null"]
     lo, hi = sel["sharpe_ci95"]
     wlo, whi = wf["oos"]["sharpe_ci95"]
 
@@ -189,18 +214,26 @@ overfitting diagnostics. All numbers on this page are read from
 
 <h2>The selected strategy</h2>
 <p><code>{escape(sel["trial"])}</code> has the highest full-sample net Sharpe ratio,
-{f2(sel["sharpe"])} (95% block-bootstrap CI {f2(lo)} to {f2(hi)}). Its Sharpe was
-{f2(sel["sharpe_first_half"])} before {escape(sel["halves_split_month"])} and
-{f2(sel["sharpe_second_half"])} after. The Deflated Sharpe Ratio depends heavily on the
-assumed variance of Sharpe ratios across trials: with the cross-trial variance used in the
-paper (std {f2(sel["trial_sharpe_std_ann"])} annualized, expected best-of-{sel["n_trials"]}
-Sharpe {f2(sel["expected_max_sharpe_ann"])}) it is {sel["deflated_sharpe"]:.3f}; with the
-no-signal variance estimated from shuffled data (std {f2(sel["null_sharpe_std_ann"])},
-expected best {f2(sel["expected_max_sharpe_null_var_ann"])}) it is
-{sel["deflated_sharpe_null_var"]:.3f}.</p>
+{f2(sel["sharpe"])} (95% block-bootstrap CI {f2(lo)} to {f2(hi)}; the interval treats this
+trial as if it had been fixed in advance and does not account for having picked it from
+{sel["n_trials"]}). Its Sharpe was {f2(sel["sharpe_first_half"])} before
+{escape(sel["halves_split_month"])} and {f2(sel["sharpe_second_half"])} after.</p>
+<p>On month-shuffled data the best of the same grid averaged {f2(null["max_sharpe_mean"])}
+(max {f2(null["max_sharpe_max"])}, p = {null["p_value"]:.3f}). Shuffling also removes the
+volatility clustering that volatility targeting uses, so the same test was repeated without
+volatility targeting: the selected signal then has a Sharpe of
+{f2(novol["selected_signal_sharpe"])}, the best of {nvn["n_trials"]} unscaled signals
+{f2(nvn["observed_max_sharpe"])}, against a shuffled best-of-grid mean of
+{f2(nvn["max_sharpe_mean"])} (p = {nvn["p_value"]:.3f}).</p>
 {figure("sharpe_distribution.png")}
 {figure("permutation_null.png")}
-{table(["Trials assumed (N)", "DSR"], dsr_rows)}
+<p>The Deflated Sharpe Ratio compares the selected Sharpe with the expected best of N
+skill-less trials, which depends on N and on the variance of Sharpe ratios across trials.
+Sign-aligning flips families whose median Sharpe is negative
+({escape(", ".join(sel["flipped_families"]) or "none")}); the effective N is the
+participation ratio of the eigenvalues of the trial correlation matrix.</p>
+{table(["Var[SR] and N used", "N", "Std of SR", "E[max SR]", "DSR"], dsr_rows)}
+{table(["Trials assumed (N), sign-aligned Var[SR]", "DSR"], dsr_n_rows)}
 {table(["Cost per unit turnover", "Sharpe"], cost_rows)}
 
 <h2>Probability of Backtest Overfitting</h2>
@@ -208,7 +241,9 @@ expected best {f2(sel["expected_max_sharpe_null_var_ann"])}) it is
 {pbo["n_splits"]:,} half/half splits. The in-sample winner lands below the out-of-sample median
 in {pct(pbo["pbo"])} of splits and loses money out of sample in {pct(pbo["prob_oos_loss"])}.
 Median Sharpe of the winner: {f2(pbo["median_is_sharpe_ann"])} in sample,
-{f2(pbo["median_oos_sharpe_ann"])} out of sample.</p>
+{f2(pbo["median_oos_sharpe_ann"])} out of sample. Across splits, the OOS Sharpe of the
+winner falls as its IS Sharpe rises (OLS slope {f2(pbo["is_oos_slope"])}); part of this is
+mechanical, because the two halves are complements of one fixed sample.</p>
 {figure("pbo_logits.png")}
 {figure("is_vs_oos.png")}
 {table(["Family", "Trials", "Best Sharpe", "Median Sharpe", "PBO"], family_rows)}
@@ -235,8 +270,9 @@ redistributed; the repository contains a download script.</li>
 <li>Signals use information up to month t and are traded in month t+1; costs are charged
 per unit of turnover; positions are scaled to a volatility target using trailing realized
 volatility.</li>
-<li>Bailey, Borwein, L&oacute;pez de Prado, Zhu (2015), The Probability of Backtest
-Overfitting. Bailey &amp; L&oacute;pez de Prado (2014), The Deflated Sharpe Ratio.</li>
+<li>Bailey, Borwein, L&oacute;pez de Prado, Zhu (2017), The Probability of Backtest
+Overfitting, Journal of Computational Finance 20(4). Bailey &amp; L&oacute;pez de Prado
+(2014), The Deflated Sharpe Ratio.</li>
 </ul>
 </main>"""
 

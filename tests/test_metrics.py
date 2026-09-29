@@ -1,14 +1,18 @@
 import numpy as np
+import pandas as pd
 import pytest
 from scipy import stats
 
 from btoverfit.metrics import (
     bootstrap_sharpe_ci,
     deflated_sharpe_ratio,
+    effective_number_of_trials,
     expected_max_sharpe,
     max_drawdown,
     probabilistic_sharpe_ratio,
+    psr_from_moments,
     sharpe_ratio,
+    sign_aligned,
 )
 
 
@@ -42,8 +46,9 @@ def test_psr_equals_half_at_own_sharpe():
     assert probabilistic_sharpe_ratio(r, benchmark_sr=own) == pytest.approx(0.5)
 
 
-def test_psr_matches_closed_form_for_symmetric_mesokurtic_sample():
-    # Symmetric +/-1 pattern plus a shift has skew 0; compare with the formula directly.
+def test_psr_matches_closed_form_for_two_point_sample():
+    # An alternating two-point series has skew 0 and raw kurtosis 1 (not 3), so only the
+    # kurtosis term of the standard error matters; compare with the formula directly.
     r = np.tile([0.03, -0.01], 60)
     sr = r.mean() / r.std(ddof=1)
     kurt = stats.kurtosis(r, fisher=False)
@@ -81,6 +86,44 @@ def test_deflated_sharpe_rejects_best_of_many_noise_strategies():
     best = trials[:, srs.argmax()]
     assert probabilistic_sharpe_ratio(best) > 0.95  # naive test is fooled
     assert deflated_sharpe_ratio(best, 200, srs.var(ddof=1)) < 0.95  # DSR is not
+
+
+def test_deflated_sharpe_reproduces_paper_worked_example():
+    """Bailey & Lopez de Prado (2014), numerical example: N = 100 trials whose annualized
+    Sharpe ratios have variance 1/2, a selected strategy with annualized SR 2.5 over
+    T = 1250 daily observations, skew -3 and raw kurtosis 10. The paper reports a
+    per-period threshold SR_0 = 0.1132 and DSR = 0.9004 (250 trading days a year)."""
+    days = 250
+    sr0 = expected_max_sharpe(100, 0.5) / np.sqrt(days)
+    assert sr0 == pytest.approx(0.1132, abs=5e-4)
+    dsr = psr_from_moments(2.5 / np.sqrt(days), 1250, skew=-3.0, kurtosis=10.0, benchmark_sr=sr0)
+    assert dsr == pytest.approx(0.9004, abs=5e-4)
+
+
+def test_sharpe_is_nan_not_inf_when_undefined():
+    assert np.isnan(sharpe_ratio([0.01]))
+    assert np.isnan(sharpe_ratio([0.01, 0.01, 0.01]))  # zero variance
+    assert np.isnan(probabilistic_sharpe_ratio([0.0, 0.0, 0.0]))
+
+
+def test_effective_number_of_trials_counts_copies_and_mirrors_once():
+    rng = np.random.default_rng(5)
+    independent = pd.DataFrame(rng.normal(0, 1, (5000, 4)))
+    assert effective_number_of_trials(independent) == pytest.approx(4, rel=0.02)
+    base = independent[0]
+    copies = pd.DataFrame({"a": base, "b": 2 * base, "c": -base})  # scaled copy + mirror
+    assert effective_number_of_trials(copies) == pytest.approx(1.0)
+    # Two independent ideas, each tried three times (once as its mirror image).
+    pairs = pd.DataFrame({"a": base, "b": -base, "c": independent[1], "d": -independent[1]})
+    assert effective_number_of_trials(pairs) == pytest.approx(2, rel=0.02)
+
+
+def test_sign_aligned_flips_only_losing_families():
+    sharpes = pd.Series([-0.5, -0.3, 0.1, 0.2, -0.1], index=list("abcde"))
+    families = pd.Series(["rev", "rev", "mom", "mom", "mom"], index=list("abcde"))
+    aligned = sign_aligned(sharpes, families)
+    # "rev" has a negative median and is flipped as a whole; "mom" keeps its losing trial.
+    assert aligned.tolist() == pytest.approx([0.5, 0.3, 0.1, 0.2, -0.1])
 
 
 def test_bootstrap_ci_brackets_estimate_and_is_reproducible():
