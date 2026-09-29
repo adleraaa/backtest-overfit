@@ -131,7 +131,7 @@ def build(results: Path, out: Path) -> Path:
             stat(
                 "Deflated Sharpe",
                 f"{sel['deflated_sharpe']:.3f}",
-                f"sign-aligned Var[SR], effective N = {sel['effective_n_trials']:.1f}",
+                f"sign-aligned Var[SR], N = {sel['n_trials']}",
             ),
             stat(
                 "Permutation p-value",

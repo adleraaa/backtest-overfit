@@ -62,7 +62,7 @@ def test_dsr_variants_and_vol_ablation_are_reported(output):
     sel = s["selected"]
     assert set(sel["dsr"]) == {"raw", "sign_aligned", "sign_aligned_effective_n", "null_variance"}
     assert 1 <= sel["effective_n_trials"] <= sel["n_trials"]
-    assert sel["deflated_sharpe"] == sel["dsr"]["sign_aligned_effective_n"]["dsr"]
+    assert sel["deflated_sharpe"] == sel["dsr"]["sign_aligned"]["dsr"]
     # Fewer effective trials means a lower bar, so the DSR can only go up.
     assert sel["dsr"]["sign_aligned_effective_n"]["dsr"] >= sel["dsr"]["sign_aligned"]["dsr"]
     novol = s["no_vol_target"]

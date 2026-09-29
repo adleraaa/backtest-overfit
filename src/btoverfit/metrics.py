@@ -116,7 +116,9 @@ def effective_number_of_trials(returns: pd.DataFrame) -> float:
     (sum lambda)^2 / sum lambda^2: it equals N for N uncorrelated trials and 1 when every
     trial is a copy (or a sign-flipped copy) of the same return stream. The DSR paper
     asks for the number of *independent* trials; counting 118 near-duplicates as 118 would
-    overstate how much searching was done.
+    overstate how much searching was done. The ratio is dominated by the largest
+    eigenvalue, so when one common factor drives most trials it can come out much smaller
+    than, say, a count of correlation clusters; treat it as a lower bound on N.
     """
     eigenvalues = np.linalg.eigvalsh(returns.corr().to_numpy())
     return float(eigenvalues.sum() ** 2 / (eigenvalues**2).sum())

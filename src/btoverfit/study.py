@@ -173,12 +173,15 @@ def run_study(
     best_name = sr_m.idxmax()
     best = matrix[best_name]
     # The DSR benchmark E[max SR] needs Var[SR] across trials and the number of trials N.
-    # Reported variants, from the literal paper recipe to the one used as the headline:
-    #   raw:           Var of the raw trial Sharpes, N = number of trials.
+    # Reported variants:
+    #   raw:           Var of the raw trial Sharpes, N = number of trials (paper recipe).
     #   sign_aligned:  families with a negative median Sharpe are flipped first, so a
     #                  losing family is not counted as "spread" against its own mirror.
+    #                  Headline: N = all trials treats correlated trials as independent,
+    #                  which overstates N, so this DSR errs on the low side.
     #   sign_aligned_effective_n: as above, with N = effective number of independent
-    #                  trials from the eigenvalues of the trial correlation matrix.
+    #                  trials from the eigenvalues of the trial correlation matrix (errs
+    #                  on the high side: one dominant eigenvalue makes N_eff small).
     #   null_variance: Var[SR] of each trial across shuffles, i.e. pure sampling noise.
     family_of = pd.Series({t.name: t.family for t in trials})
     sr_aligned = sign_aligned(sr_m, family_of[sr_m.index])
@@ -205,7 +208,7 @@ def run_study(
         "effective_n_trials": n_eff,
         "max_abs_corr_between_trials": max_abs_corr,
         "flipped_families": sorted(set(family_of[sr_aligned.index[sr_aligned != sr_m]])),
-        "deflated_sharpe": dsr["sign_aligned_effective_n"]["dsr"],
+        "deflated_sharpe": dsr["sign_aligned"]["dsr"],
         "dsr": dsr,
         "deflated_sharpe_by_n_trials_aligned_var": dsr_by_n,
         "alpha": _alphas(best, ff3, ff5),
