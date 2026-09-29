@@ -4,7 +4,7 @@
     "eval_end": "2026-08",
     "n_months": 686,
     "n_assets": 49,
-    "n_trials": 118,
+    "n_trials": 112,
     "cost_bps": 10.0,
     "vol_target": 0.1
   },
@@ -20,20 +20,46 @@
       0.9547767919354527
     ],
     "psr_vs_zero": 0.9999997438635866,
-    "n_trials": 118,
-    "trial_sharpe_std_ann": 0.38197791040894424,
-    "expected_max_sharpe_ann": 0.9886725923378709,
-    "deflated_sharpe": 0.011281468741232554,
-    "deflated_sharpe_by_n_trials": {
-      "1": 0.9999997438635866,
-      "4": 0.9799774919619529,
-      "10": 0.7187777280368904,
-      "30": 0.20382319603243032,
-      "118": 0.011281468741232554
+    "n_trials": 112,
+    "effective_n_trials": 3.129439488145698,
+    "max_abs_corr_between_trials": 0.9797861258691855,
+    "flipped_families": [
+      "reversal"
+    ],
+    "deflated_sharpe": 0.8930599268116065,
+    "dsr": {
+      "raw": {
+        "n_trials": 112.0,
+        "sharpe_std_ann": 0.35185407703274774,
+        "expected_max_sharpe_ann": 0.9043430358978506,
+        "dsr": 0.04866978883146277
+      },
+      "sign_aligned": {
+        "n_trials": 112.0,
+        "sharpe_std_ann": 0.1990475881688755,
+        "expected_max_sharpe_ann": 0.5115964597904383,
+        "dsr": 0.8930599268116065
+      },
+      "sign_aligned_effective_n": {
+        "n_trials": 3.129439488145698,
+        "sharpe_std_ann": 0.1990475881688755,
+        "expected_max_sharpe_ann": 0.17587873219933395,
+        "dsr": 0.9999014107082351
+      },
+      "null_variance": {
+        "n_trials": 112.0,
+        "sharpe_std_ann": 0.1309716711197326,
+        "expected_max_sharpe_ann": 0.33662625050671235,
+        "dsr": 0.9943826118914294
+      }
     },
-    "null_sharpe_std_ann": 0.12765661307614848,
-    "expected_max_sharpe_null_var_ann": 0.33041333317926064,
-    "deflated_sharpe_null_var": 0.995077115073873,
+    "deflated_sharpe_by_n_trials_aligned_var": {
+      "1": 0.9999997438635866,
+      "4": 0.9997444276985971,
+      "10": 0.9966023565951969,
+      "30": 0.9757747681314409,
+      "112": 0.8930599268116065
+    },
     "alpha": {
       "ff3": {
         "alpha_monthly": 0.008040207062024879,
@@ -87,14 +113,15 @@
     }
   },
   "pbo": {
-    "pbo": 0.023232323232323233,
+    "pbo": 0.023931623931623933,
     "prob_oos_loss": 0.009401709401709401,
     "n_splits": 12870,
     "n_blocks": 16,
     "rows_used": 672,
     "median_is_sharpe_ann": 0.6618447815574671,
     "median_oos_sharpe_ann": 0.5444778471956804,
-    "median_logit": 2.935628349484285
+    "median_logit": 2.8810693652338517,
+    "is_oos_slope": -0.6695014065150573
   },
   "walk_forward": {
     "train_months": 120,
@@ -126,12 +153,12 @@
     },
     "equal_weight_all_trials_same_months": {
       "n_months": 566,
-      "ann_return": 0.01709308798351702,
-      "ann_vol": 0.06460169946873964,
-      "sharpe": 0.26459192442434515,
-      "max_drawdown": -0.22115396959951572
+      "ann_return": 0.02119775355031559,
+      "ann_vol": 0.07126684405996199,
+      "sharpe": 0.29744201290126404,
+      "max_drawdown": -0.2178704261861032
     },
-    "median_trial_sharpe_same_months": 0.24672383016247393,
+    "median_trial_sharpe_same_months": 0.25608024693048936,
     "alpha": {
       "ff3": {
         "alpha_monthly": 0.0036562494713677997,
@@ -198,19 +225,35 @@
       "pbo": 0.33644133644133645
     },
     "reversal": {
-      "n_trials": 18,
-      "best_trial": "reversal(lookback=3,quantile=0.1)|vol36",
-      "best_sharpe": -0.48837902257253113,
-      "median_sharpe": -0.6493743211305296,
-      "pbo": 0.05920745920745921
+      "n_trials": 12,
+      "best_trial": "reversal(lookback=2,quantile=0.1)|vol36",
+      "best_sharpe": -0.5175693483952011,
+      "median_sharpe": -0.740038051434815,
+      "pbo": 0.008391608391608392
     }
   },
   "permutation_null": {
     "n_permutations": 200,
-    "max_sharpe_mean": 0.24667912426309913,
-    "max_sharpe_p95": 0.42098420168711503,
-    "max_sharpe_max": 0.571046798754848,
+    "n_trials": 112,
+    "observed_max_sharpe": 0.6798815090072087,
+    "max_sharpe_mean": 0.21945657466830046,
+    "max_sharpe_p95": 0.38581276336912734,
+    "max_sharpe_max": 0.5402679729828772,
     "p_value": 0.004975124378109453
+  },
+  "no_vol_target": {
+    "selected_signal": "xsmom(lookback=12,skip=0,quantile=0.2)|novol",
+    "selected_signal_sharpe": 0.5186141167442813,
+    "best_trial": "xsmom(lookback=12,skip=0,quantile=0.2)|novol",
+    "permutation_null": {
+      "n_permutations": 200,
+      "n_trials": 56,
+      "observed_max_sharpe": 0.5186141167442813,
+      "max_sharpe_mean": 0.1964240682572191,
+      "max_sharpe_p95": 0.3525934322511832,
+      "max_sharpe_max": 0.5002860430423545,
+      "p_value": 0.004975124378109453
+    }
   },
   "meta": {
     "data_source": "Kenneth R. French Data Library, https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html",
@@ -220,8 +263,13 @@
       "F-F_Research_Data_5_Factors_2x3_CSV.zip"
     ],
     "data_vintage": "This file was created using the 202608 CRSP database.",
+    "sha256": {
+      "49_Industry_Portfolios_CSV.zip": "16b3f20bf5bd1db8f5cd7a1b29f5cab1350eb0d5106c5309f77a6629590b1c0e",
+      "F-F_Research_Data_Factors_CSV.zip": "593f4fbef03181bc0b22ff6292f217689dd1fb79355049ca905d95b262040a66",
+      "F-F_Research_Data_5_Factors_2x3_CSV.zip": "36756c5c2559648519ac4b22913d860c6afd865cfebce920e3e8927f8e2d10b7"
+    },
     "data_start_incl_warmup": "1963-07",
-    "runtime_seconds": 620.7,
+    "runtime_seconds": 899.2,
     "hardware": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
     "python": "3.13.7",
     "packages": {
