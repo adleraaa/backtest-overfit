@@ -12,6 +12,12 @@ you should expect to get.
 
 Report page: https://adleraaa.github.io/backtest-overfit/
 
+## How this was built
+
+This project was built with [Claude Code](https://claude.com/claude-code), an AI coding agent,
+on September 28, 2026 (8 of 8 commits carry a `Co-Authored-By: Claude` trailer). The numbers in
+this README come from the scripts and result files in this repository.
+
 ## Finding
 
 The backtest winner is industry momentum (12-month lookback, top/bottom 20%, 12-month
@@ -169,7 +175,7 @@ DSR. `--refresh` re-downloads the cached data files.
   (`tests/test_grid.py` checks this). More broadly, the reversal family is sign-flipped
   short-horizon momentum. Counting a losing family as "spread" inflates the cross-trial
   Var[SR]: the results committed in c39caa1 had E[max SR] = 0.99 and DSR = 0.011, which
-  I first misread as DSR being unstable ("raw" row above: 0.049 now). The
+  was at first misread as DSR being unstable ("raw" row above: 0.049 now). The
   mirror lookback is now excluded (a test asserts no two signals are more than 0.99
   correlated), and the headline DSR flips families with a negative median Sharpe before
   taking the variance. It still counts all 112 trials as independent, which overstates N,
@@ -194,7 +200,7 @@ DSR. `--refresh` re-downloads the cached data files.
 - Transaction costs are a flat bps charge on turnover. They ignore weight drift within
   the month, borrowing costs for shorts, and the fact that industry portfolios are not
   directly tradable (an ETF implementation would have tracking error and fees).
-- The grid (112 trials) is small and was chosen by me. A real research process usually
+- The grid (112 trials) is small and was chosen for this study. A real research process usually
   tries more variants, and those extra variants are never logged, which is exactly what
   PBO and DSR are meant to penalize. The reported DSR and PBO describe this grid only.
 - Neither N for the DSR is right: all 112 trials overstates the number of independent
